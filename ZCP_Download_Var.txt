@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZCP_DOWNLOAD_VAR
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : INCLUDE - ZCP_DOWNLOAD_VAR                                *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 26 de 2019                                      *
+* OBJETIVO : Include que contiene las Variable del Programa            *
+* General para las dos interfaces (UF y BI) - llamada ZCP_DOWNLOAD     *
+*&&------------------------------------------------------------------&&*
+
+
+*Variables Generales
+DATA: l_table TYPE REF TO   data,                           "Contiene Tabla
+      oref    TYPE REF TO   cl_gui_docking_container,       "Almacena Programa y Contiene la Dynpro
+      aref    TYPE REF TO   cl_gui_alv_grid,                "Muestra los Datos almacenados en la Variable de la Dynpro
+      clik    TYPE TABLE OF syucomm.                        "Variable al Click
+
+FIELD-SYMBOLS: <t> TYPE STANDARD TABLE.                     "Variable especial
+
+
+*&--------------------------------------------USUARIO ACCESO------------------------------------------&*
+
+"Interfaz que verifica Usuario
+DATA: USUARIO TYPE ZPRUEBA-usuarios,
+      ROL     TYPE ZPRUEBA-rol_general.

@@ -1,0 +1,42 @@
+*&---------------------------------------------------------------------*
+*& Report ZCP_DOWNLOAD
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : ZCP_DOWNLOAD                                              *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 27 de 2019                                      *
+* OBJETIVO : Programa General - Desacarga de Archivos                  *
+*&&------------------------------------------------------------------&&*
+
+
+
+REPORT zcp_download.
+
+
+*Interfaz que verifica el Usuario
+
+DATA: usuario TYPE zcdsprg01-uname,
+      rol     TYPE zcdsprg01-rol_general.
+
+
+*Se llaman los datos
+SELECT SINGLE usuarios, rol_general FROM zprueba
+  INTO (@usuario, @rol )
+  WHERE usuarios = @sy-uname.
+
+
+
+IF usuario EQ sy-uname AND rol EQ 'ZS_BI_DESA_CDS'.
+
+  "Se debe agregar VIA SELECTION-SCREEN
+  "Programa a Abrir es de este tipo
+  SUBMIT zcp_download1 VIA SELECTION-SCREEN.                          "Interfaz Usuario UF
+
+ELSEIF usuario EQ sy-uname AND rol NE 'ZS_BI_DESA_CDS'.
+
+  SUBMIT zcp_download2 VIA SELECTION-SCREEN.                          "Interfaz Usuario BI
+
+ELSE.
+  WRITE : / 'NO TIENE PERMISOS, COMUNIQUESE CON EL ADMINISTRADOR EN SISTEMAS (BI)'.
+ENDIF.

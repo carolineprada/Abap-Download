@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZCP_DOWNLOAD_VAR2
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : INCLUDE - ZCP_DOWNLOAD_VAR2                               *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 27 de 2019                                      *
+* OBJETIVO : Include que contiene Variable adicionales (ListBox)       *
+* para la interfaz de Usuario Final - llamada ZCP_DOWNLOAD             *
+*&&------------------------------------------------------------------&&*
+
+
+TYPES: BEGIN OF t_acc,
+       uname      TYPE ZPRUEBA-usuarios,
+       view_table TYPE ZPRUEBA-tablas,
+END OF t_acc.
+
+
+*Variables  Validación ListBox
+DATA: it_acces    TYPE STANDARD TABLE OF t_acc,
+      wa_acces    LIKE LINE OF           it_acces,
+      dref        TYPE REF TO            data,
+      fields_itab LIKE       dd03l OCCURS 200000 WITH HEADER LINE,
+      data_itab(200000) TYPE C     OCCURS 200000 WITH HEADER LINE,
+      i_tmp(100)                   OCCURS 200000 WITH HEADER LINE.
+
+**Variables ListBox
+DATA: g_id      TYPE vrm_id,
+      it_values TYPE vrm_values,
+      wa_values LIKE LINE OF it_values.

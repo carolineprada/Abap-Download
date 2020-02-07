@@ -1,0 +1,66 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZCP_DOWNLOAD_DES
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : INCLUDE - ZCP_DOWNLOAD_DES                                *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 26 de 2019                                      *
+* OBJETIVO : Include que trae otros Desarrollos para la lógica de la   *
+* Interfaz Usuario BI - llamada ZCP_DOWNLOAD                           *
+*&&------------------------------------------------------------------&&*
+
+
+AT SELECTION-SCREEN OUTPUT.
+
+  REFRESH clik.
+  APPEND 'PRIN' TO clik.
+
+
+**Llamas de los Métodos Implementados en ZCP_DOWNLOAD_F01
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR file.
+
+  file = lcl_table_download=>browse_local_filesystem( i_table = table ).
+
+AT SELECTION-SCREEN.
+
+  file = custom_container=>custom_grid( i_table = table ).
+
+AT SELECTION-SCREEN ON table.
+
+  DATA: ls_dd02l  TYPE dd03l.
+
+  SELECT SINGLE * FROM dd03l INTO ls_dd02l
+  WHERE tabname = table
+    AND as4local = 'A'.
+
+  IF sy-dbcnt EQ 0.
+    MESSAGE 'Tabla Especificada no existe' TYPE 'E'.
+    CLEAR table.
+  ENDIF.
+
+  IF NOT table CP 'Z*' AND NOT table CP 'Y*'.
+    MESSAGE 'No se permiten tablas de sistema' TYPE 'E'.
+  ENDIF.
+
+
+
+START-OF-SELECTION.
+
+  DATA:
+    lro_table_download TYPE REF TO lcl_table_download.
+
+  CREATE OBJECT lro_table_download.
+
+  lro_table_download->initialize( ).
+  lro_table_download->set_parameter( i_table       = table
+                                     i_file        = file
+                                     i_separator   = separatr
+                                     i_header      = headincl ).
+
+  lro_table_download->download_table( ).
+
+  IF sy-subrc EQ 0.
+    MESSAGE 'Descarga Correcta'  TYPE 'I'.
+  ENDIF.
+  LEAVE PROGRAM.

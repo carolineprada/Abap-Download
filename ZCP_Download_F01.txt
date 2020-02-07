@@ -1,0 +1,334 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZCP_DOWNLOAD_F01
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : INCLUDE - ZCP_DOWNLOAD_F01                                *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 26 de 2019                                      *
+* OBJETIVO : Include que contiene los Métodos y la Clase del Programa  *
+* General para las dos interfaces (UF y BI) - llamada ZCP_DOWNLOAD     *
+*&&------------------------------------------------------------------&&*
+
+
+
+CLASS lcl_table_download DEFINITION.
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS:                                                                              "Método Estático
+      browse_local_filesystem IMPORTING i_table       TYPE tabname
+                              RETURNING VALUE(e_file) TYPE string.
+
+    METHODS:
+      initialize,
+      set_parameter    IMPORTING i_table       TYPE tabname
+                                 i_file        TYPE string
+                                 i_separator   TYPE char01      DEFAULT ';'
+                                 i_header      TYPE abap_bool   DEFAULT abap_true
+                                 i_file_client TYPE mandt       DEFAULT sy-mandt
+                                 i_enclosing   TYPE char01      OPTIONAL
+                                 i_codepage    TYPE cpcodepage  OPTIONAL,
+      download_table.
+
+  PROTECTED SECTION.
+
+    TYPES: tyt_csv     TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+
+    DATA:
+      m_table         TYPE tabname,
+      m_file          TYPE string,
+      m_header_incl   TYPE abap_bool,
+      m_change_client TYPE abap_bool,
+      m_separator     TYPE char01,
+      m_enclosing     TYPE char01,
+      m_file_client   TYPE mandt,
+      m_codepage      TYPE abap_encod,
+      mt_dd03l        TYPE STANDARD TABLE OF dd03l.
+
+    METHODS:
+      get_header_line  RETURNING VALUE(es_csv) TYPE string,
+      download_block   CHANGING  it_data TYPE table,
+      convert_to_csv   IMPORTING is_line       TYPE data
+                       RETURNING VALUE(es_csv) TYPE string.
+
+ENDCLASS.
+
+CLASS lcl_table_download IMPLEMENTATION.
+
+  METHOD browse_local_filesystem.                                               "Método de Almacenamiento del Archivo
+
+    DATA:
+      l_filename TYPE string,
+      l_path     TYPE string,
+      l_file     TYPE string.
+
+    l_file = i_table.
+    REPLACE ALL OCCURRENCES OF '/' IN l_file WITH ''.
+    CONCATENATE sy-uname '-' sy-datum '.txt' INTO l_file.
+
+    cl_gui_frontend_services=>file_save_dialog(
+      EXPORTING
+        window_title         = 'Save table as csv file'
+        default_extension    = 'txt'
+        default_file_name    = l_file
+        file_filter          = '*.txt'
+        initial_directory    = 'D:\UserData'
+        prompt_on_overwrite  = 'X'
+      CHANGING
+        filename             = l_filename
+        path                 = l_path
+        fullpath             = e_file
+      EXCEPTIONS
+        cntl_error           = 1
+        error_no_gui         = 2
+        not_supported_by_gui = 3
+        OTHERS               = 4 ).
+    IF sy-subrc NE 0.
+      MESSAGE 'Error en la Selección del Archivo' TYPE 'E'.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD initialize.                                                            "Método que Inicializa las Variables
+
+    CLEAR:
+      m_table,
+      m_file,
+      m_separator,
+      m_header_incl,
+      m_file_client,
+      m_enclosing,
+      mt_dd03l.
+
+  ENDMETHOD.
+
+  METHOD set_parameter.                                                         "Método que contiene el conjunto de Parámetros
+
+    DATA: lrs_dd03l TYPE REF TO dd03l.
+
+    m_table         = i_table.
+    m_file          = i_file.
+    m_separator     = i_separator.
+    m_header_incl   = i_header.
+    m_file_client   = i_file_client.
+    m_enclosing     = i_enclosing.
+    m_codepage      = i_codepage.
+
+    "Sólo trae campos de la Tabla seleccionada, siempre que sea de tipo Elemento de Dato
+    SELECT * FROM dd03l
+    INTO CORRESPONDING FIELDS OF TABLE mt_dd03l
+    WHERE tabname  = m_table
+    AND comptype = 'E'
+    ORDER BY position.
+
+    "Verifica el Mandante
+    READ TABLE mt_dd03l REFERENCE INTO lrs_dd03l INDEX 1.
+    IF lrs_dd03l->rollname = 'MANDT' AND
+      m_file_client NE sy-mandt.
+      m_change_client = abap_true.
+    ELSE.
+      m_change_client = abap_false.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD download_table.                                                        "Método de Descarga de la Tabla
+
+    DATA: lrt_data TYPE REF TO data,
+          lrs_data TYPE REF TO data,
+          lt_csv   TYPE        tyt_csv,
+          ls_csv   TYPE        string.
+
+    FIELD-SYMBOLS:
+      <fs_table> TYPE STANDARD TABLE,
+      <fs_line>  TYPE data.
+
+
+    "Crear Tabla Dinámica
+    CREATE DATA lrt_data TYPE STANDARD TABLE OF (m_table).
+    ASSIGN lrt_data->* TO <fs_table>.
+
+    "Crear Estructura Dinámica
+    CREATE DATA lrs_data TYPE (m_table).
+    ASSIGN lrs_data->* TO <fs_line>.
+
+    "Selecciona Tabla
+    SELECT * FROM (m_table)
+    INTO TABLE <fs_table>.
+
+    "Construye Encabezado
+    IF m_header_incl = abap_true.
+      ls_csv = get_header_line( ).
+      APPEND ls_csv TO lt_csv.
+    ENDIF.
+
+    "Convertir Estructura a formato CSV
+    LOOP AT <fs_table> INTO <fs_line>.
+      ls_csv = convert_to_csv( <fs_line> ).
+      APPEND ls_csv TO lt_csv.
+    ENDLOOP.
+
+    "Guardar Archivo
+    download_block( CHANGING it_data = lt_csv ).
+
+  ENDMETHOD.
+
+  METHOD get_header_line.                                                       "Método para la Línea de Encabezado
+
+    DATA: lrs_dd03l TYPE REF TO dd03l.
+
+    "Crea Línea del Encabezado
+    LOOP AT mt_dd03l REFERENCE INTO lrs_dd03l .
+      IF sy-tabix = 1.
+        es_csv = lrs_dd03l->fieldname.
+      ELSE.
+        CONCATENATE es_csv m_separator lrs_dd03l->fieldname INTO es_csv.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD convert_to_csv.                                                        "Método que convierte los datos en Formato CSV
+
+    DATA: l_field_content TYPE string,
+          l_enclosing_esc TYPE string.
+
+    FIELD-SYMBOLS:  <fs_field> TYPE data.
+
+    DO.
+      ASSIGN COMPONENT sy-index OF STRUCTURE is_line TO <fs_field>.
+      IF sy-subrc <> 0.
+        EXIT.
+      ENDIF.
+
+      MOVE <fs_field> TO l_field_content.
+      CONDENSE l_field_content.
+
+      "Valida los datos cuando ingresa el Mandante
+      IF sy-index = 1 AND
+        m_change_client = abap_true.
+        l_field_content = m_file_client.
+      ENDIF.
+
+      CONCATENATE '\' m_enclosing INTO l_enclosing_esc.
+      IF m_enclosing IS NOT INITIAL.
+        REPLACE ALL OCCURRENCES OF m_enclosing IN l_field_content WITH l_enclosing_esc.
+        CONCATENATE m_enclosing l_field_content m_enclosing INTO l_field_content.
+      ENDIF.
+
+      "Concatena cada fila con el Delimitador ingresado
+      IF sy-index = 1.
+        es_csv = l_field_content.
+      ELSE.
+        CONCATENATE es_csv l_field_content INTO es_csv SEPARATED BY m_separator.
+      ENDIF.
+
+    ENDDO.
+  ENDMETHOD.
+
+  METHOD download_block.                                                        "Método de Descarga del Documento
+
+    CALL FUNCTION 'GUI_DOWNLOAD'
+      EXPORTING
+        filename = m_file
+        codepage = m_codepage
+      TABLES
+        data_tab = it_data.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS custom_container DEFINITION.
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS: custom_grid IMPORTING i_table       TYPE tabname
+                               RETURNING VALUE(e_file) TYPE string.
+
+ENDCLASS.
+
+CLASS custom_container IMPLEMENTATION.
+
+  METHOD custom_grid.                                                           "Método que Trae datos del Custome Container
+
+    DATA: l_tab  TYPE string,
+          prueba TYPE REF TO data.
+
+    l_tab = i_table.
+
+    IF table IS NOT INITIAL.
+
+      CLEAR l_table.
+      UNASSIGN <t>.
+
+      CREATE DATA l_table TYPE STANDARD TABLE OF (table) WITH NON-UNIQUE DEFAULT KEY.
+      ASSIGN l_table->* TO <t>.
+      SELECT *
+        INTO TABLE <t>
+        FROM (table).
+
+      IF sy-subrc EQ 0.
+      ENDIF.
+
+      CLEAR oref.
+      CREATE OBJECT oref
+        EXPORTING
+          dynnr                       = '1000'
+          repid                       = sy-repid
+          side                        = cl_gui_docking_container=>dock_at_bottom
+          ratio                       = 80
+        EXCEPTIONS
+          cntl_error                  = 1
+          cntl_system_error           = 2
+          create_error                = 3
+          lifetime_error              = 4
+          lifetime_dynpro_dynpro_link = 5
+          OTHERS                      = 6.
+
+      IF sy-subrc EQ 0.
+      ENDIF.
+
+      CLEAR aref.
+      CREATE OBJECT aref
+        EXPORTING
+          i_parent          = oref
+        EXCEPTIONS
+          error_cntl_create = 1
+          error_cntl_init   = 2
+          error_cntl_link   = 3
+          error_dp_create   = 4
+          OTHERS            = 5.
+
+      IF sy-subrc EQ 0.
+      ENDIF.
+
+      CALL METHOD aref->set_table_for_first_display                               "Llama la estructura de referencia del Diccionario de Datos
+        EXPORTING
+          i_structure_name              = table
+        CHANGING
+          it_outtab                     = <t>
+        EXCEPTIONS
+          invalid_parameter_combination = 1
+          program_error                 = 2
+          too_many_lines                = 3
+          OTHERS                        = 4.
+
+
+      CALL METHOD aref->refresh_table_display                                      "Refresca los Datos del Custome Container
+        EXCEPTIONS
+          finished = 1
+          OTHERS   = 2.
+      IF sy-subrc EQ 0.
+      ENDIF.
+
+      IF aref IS NOT INITIAL.
+        CLEAR aref.
+      ENDIF.
+
+    ENDIF.
+  ENDMETHOD.
+
+ENDCLASS.

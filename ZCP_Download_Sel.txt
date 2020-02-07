@@ -1,0 +1,26 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZCP_DOWNLOAD_SEL
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : INCLUDE - ZCP_DOWNLOAD_SEL                                *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 26 de 2019                                      *
+* OBJETIVO : Include que contiene los Parámetros de Entrada de la      *
+* Interfaz  de Usuario BI - llamada ZCP_DOWNLOAD                       *
+*&&------------------------------------------------------------------&&*
+
+
+
+*Parámetros de Entrada de Datos
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  PARAMETERS: table TYPE DD02L-TABNAME OBLIGATORY,                               "Tabla
+              file  TYPE string LOWER CASE.                                      "Selección Sitio de Descarga
+SELECTION-SCREEN END OF BLOCK b1.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
+  PARAMETERS: SEPARATR TYPE c length 1 DEFAULT ';',                              "Delimitador
+*              p_soc  TYPE C length 4 DEFAULT 'PE01' OBLIGATORY,                 "Sociedad - En Desarrollo
+              HEADINCL TYPE abap_bool DEFAULT abap_true AS CHECKBOX.             "Encabezado
+SELECTION-SCREEN END OF BLOCK b2.

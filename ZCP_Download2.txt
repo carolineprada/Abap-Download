@@ -1,0 +1,21 @@
+*&---------------------------------------------------------------------*
+*& Report ZCP_DOWNLOAD2
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : ZCP_DOWNLOAD                                              *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 27 de 2019                                      *
+* OBJETIVO : Programa General - Desacarga de Archivos Dinámico(User UF)*
+*&&------------------------------------------------------------------&&*
+
+
+
+REPORT ZCP_DOWNLOAD2.
+
+
+INCLUDE: zcp_download_var,           "Include de Variables - Generales
+         zcp_download_var2,          "Include de Variables - ListBox
+         zcp_download_sel2,          "Include de Forma User - UF
+         zcp_download_f01,           "Include de Métodos
+         zcp_download_des2.          "Otros Desarrollos - ListBox

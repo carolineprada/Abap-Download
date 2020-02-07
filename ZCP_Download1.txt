@@ -1,0 +1,21 @@
+*&---------------------------------------------------------------------*
+*& Report ZCP_DOWNLOAD1
+*&---------------------------------------------------------------------*
+
+*&&------------------------------------------------------------------&&*
+* PROGRAMA : ZCP_DOWNLOAD1                                             *
+* USUARIO  : CPRADA                                                    *
+* FECHA    : Noviembre 27 de 2019                                      *
+* OBJETIVO : Programa General - Desacarga de Archivos Dinámico(User BI)*
+*&&------------------------------------------------------------------&&*
+
+
+
+REPORT zcp_download1.
+
+
+
+INCLUDE: zcp_download_var,          "Include de Variables
+         zcp_download_sel,          "Include de Forma User - BI
+         zcp_download_f01,          "Include de Métodos
+         zcp_download_des.          "Otros Desarrollos
